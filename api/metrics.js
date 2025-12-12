@@ -3,7 +3,7 @@
 let lastMetrics = null;
 
 export default async function handler(req, res) {
-  // CORS – permite que o AI Studio e a extensão chamem esse endpoint
+  // CORS – permite que AI Studio, extensão e seu navegador acessem
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type,X-API-Key");
@@ -13,17 +13,18 @@ export default async function handler(req, res) {
     return;
   }
 
-  // Checagem simples de API Key (opcional, mas recomendado)
+  // 🔴 Só checa API KEY para POST (extensão)
   const apiKey = process.env.METRICS_API_KEY;
   const headerKey = req.headers["x-api-key"];
+  const isPost = req.method === "POST";
 
-  if (apiKey && headerKey !== apiKey) {
+  if (isPost && apiKey && headerKey !== apiKey) {
     res.status(401).json({ ok: false, error: "unauthorized" });
     return;
   }
 
   if (req.method === "POST") {
-    // Extensão vai mandar as métricas aqui
+    // Extensão manda as métricas pra cá
     lastMetrics = {
       ...req.body,
       _serverReceivedAt: new Date().toISOString(),
@@ -33,7 +34,7 @@ export default async function handler(req, res) {
   }
 
   if (req.method === "GET") {
-    // Sua plataforma (HUD) vai ler as métricas daqui
+    // HUD (e você no navegador) lê a última métrica salva
     if (!lastMetrics) {
       res.status(200).json({ ok: false, reason: "no_data" });
       return;
